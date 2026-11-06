@@ -145,7 +145,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Name with improved typography and responsive sizing
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: Text(
                   state.name,

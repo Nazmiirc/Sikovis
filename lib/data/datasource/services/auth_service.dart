@@ -1,11 +1,10 @@
-import 'package:dio/dio.dart';
 import 'package:either_dart/either.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:sikovis/data/models/login_response_model/login_response_model.dart';
+import 'package:sikovis/data/models/login_response_model/user.dart';
 import 'package:sikovis/data/models/register_response_model/register_response_model.dart';
 
 class AuthService {
-  final dio = Dio(BaseOptions(connectTimeout: Duration(seconds: 5)));
-
   ///register
   Future<Either<String, RegisterResponseModel>> register(
     String name,
@@ -14,28 +13,31 @@ class AuthService {
     String password,
   ) async {
     try {
-      var response = await dio.post(
-        'https://servismotor.sikoteng.my.id/api/register',
-        data: {
-          "name": name,
-          "email": email,
-          "phone": phone,
-          "password": password
-        },
-      );
-
-      var dataResponse = RegisterResponseModel.fromMap(response.data);
-      return Right(dataResponse);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        var errorResponse = e.response?.data['message'];
-        return Left('Error : $errorResponse');
-      } else if (e.response?.statusCode == 401) {
-        var errorResponse = e.response?.data['message'];
-        return Left('Error : $errorResponse');
-      } else {
-        return Left('Undhandle Error : ${e.message}');
+      final box = Hive.box('users');
+      
+      // Check if user already exists
+      if (box.containsKey(email)) {
+        return Left('Error : Email sudah terdaftar');
       }
+
+      // Save user data
+      final userData = {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'id': DateTime.now().millisecondsSinceEpoch,
+      };
+      
+      await box.put(email, userData);
+
+      var dataResponse = const RegisterResponseModel(
+        message: 'Registrasi berhasil',
+        token: 'mock_token_register',
+      );
+      return Right(dataResponse);
+    } catch (e) {
+      return Left('Undhandle Error : ${e.toString()}');
     }
   }
 
@@ -45,23 +47,36 @@ class AuthService {
     String password,
   ) async {
     try {
-      var response = await dio.post(
-        'https://servismotor.sikoteng.my.id/api/login',
-        data: {"email": email, "password": password},
-      );
-
-      var dataResponse = LoginResponseModel.fromMap(response.data);
-      return Right(dataResponse);
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 404) {
-        var errorResponse = e.response?.data['message'];
-        return Left('Error : $errorResponse');
-      } else if (e.response?.statusCode == 401) {
-        var errorResponse = e.response?.data['message'];
-        return Left('Error : $errorResponse');
-      } else {
-        return Left('Undhandle Error : ${e.message}');
+      final box = Hive.box('users');
+      
+      if (!box.containsKey(email)) {
+        return Left('Error : Akun tidak ditemukan');
       }
+
+      final userData = box.get(email);
+      
+      if (userData['password'] != password) {
+        return Left('Error : Password salah');
+      }
+
+      var dataResponse = LoginResponseModel(
+        message: 'Login berhasil',
+        token: 'mock_token_${DateTime.now().millisecondsSinceEpoch}',
+        user: User(
+          id: userData['id'],
+          name: userData['name'],
+          email: userData['email'],
+        ),
+      );
+      
+      // Save current user to the 'user' box for profile fetch
+      final userBox = Hive.box('user');
+      await userBox.put('name', userData['name']);
+      await userBox.put('email', userData['email']);
+      
+      return Right(dataResponse);
+    } catch (e) {
+      return Left('Undhandle Error : ${e.toString()}');
     }
   }
 }

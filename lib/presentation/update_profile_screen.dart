@@ -81,7 +81,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> with TickerPr
     setState(() => _isLoading = true);
 
     try {
-      final token = await LocalStorage().getToken();
+      final token = LocalStorage().getToken();
       if (token == null) throw Exception("Token tidak ditemukan");
 
       final requestBody = {

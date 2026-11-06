@@ -1,4 +1,4 @@
-// File: lib/cubit/booking_cubit/booking_state.dart
+    // File: lib/cubit/booking_cubit/booking_state.dart
 
 import 'package:equatable/equatable.dart';
 

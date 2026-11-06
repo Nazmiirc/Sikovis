@@ -16,10 +16,10 @@ import 'package:sikovis/presentation/update_profile_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
- 
   await Hive.initFlutter();
   await Hive.openBox('user');
-
+  await Hive.openBox('users'); // Store registered users
+  await Hive.openBox('bookings'); // Store bookings
 
   await initializeDateFormatting('id_ID', null); 
 
